@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:cache="http://www.springframework.org/schema/cache"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans.xsd  
+		http://www.springframework.org/schema/context 
+	 	http://www.springframework.org/schema/context/spring-context.xsd           
+	 	http://www.springframework.org/schema/cache            
+	 	http://www.springframework.org/schema/cache/spring-cache.xsd">
+	 	
+	<bean name="memcachedSessionClient"	class="net.rubyeye.xmemcached.utils.XMemcachedClientFactoryBean" destroy-method="shutdown">
+		<!-- memcached节点列表，形如“主节点1:port,备份节点1:port 主节点2:port,备份节点2:port“的字符串， 可以不设置备份节点，主备节点逗号隔开，不同分组空格隔开 -->
+		<property name="servers"> 
+			<value>127.0.0.1:11211</value>
+		</property>
+		<!-- server's weights -->
+		<property name="weights" >
+			<bean class="com.damon.web.utils.WeightList">
+				<constructor-arg index="0" value="1"/>
+			</bean>
+		</property>
+		<property name="connectionPoolSize" value="5"/>
+		<!--Agreement factories, binary, Memcached version must be above 1.4 -->
+		<property name="commandFactory">
+			<bean class="net.rubyeye.xmemcached.command.BinaryCommandFactory"/>
+		</property>
+		<!-- Distribution strategy, consistent hashing -->
+		<property name="sessionLocator">
+			<bean class="net.rubyeye.xmemcached.impl.KetamaMemcachedSessionLocator"/>
+		</property>
+		<property name="transcoder">
+			<bean class="net.rubyeye.xmemcached.transcoders.SerializingTranscoder"/>
+		</property>
+		<!-- Failure mode -->
+		<property name="failureMode" value="true" />
+	</bean>
+	
+	<bean id="sessionManager" class="com.damon.web.session.impl.MemcachedSessionManagerImple" scope="singleton">
+		
+		<property name="memcachedSessionClient" ref="memcachedSessionClient"/>
+		<!-- session maxInactiveInterval   (seconds)-->
+		<property name="maxInactiveInterval" value="${session.maxInactiveInterval}"/>
+		<!-- if session no changes，5 minutes to update a cache session information  -->
+		<property name="expirationUpdateInterval" value="${session.expirationUpdateInterval}"/>
+		
+		<property name="cookiePath" value="${session.cookiePath}"/>
+		
+		<property name="cookieName" value="${session.cookieName}"/>
+		
+		<property name="secure" value="${session.cookieSecure}"/>
+		
+		<property name="httpOnly" value="${session.cookieHttpOnly}"/>
+		
+		<property name="maxAge"  value="${session.cookieMaxAge}"/>
+		
+		<property name="sessionIdPrefix" value="${session.sessionIdPrefix}"/>
+		
+	</bean>
+	
+</beans>
+
